@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubetest-deployment
+  labels:
+    app: kubetest
+spec:
+  replicas: 3 # You can adjust the number of desired instances
+  selector:
+    matchLabels:
+      app: kubetest
+  template:
+    metadata:
+      labels:
+        app: kubetest
+    spec:
+      containers:
+        - name: kubetest-container
+          image: chackoabraham/kubetest:latest
+          ports:
+            - containerPort: 80 # Assuming your web server inside the container listens on port 80
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
