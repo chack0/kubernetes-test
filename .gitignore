@@ -1,0 +1,31 @@
+# Flutter/Dart-specific exclusion
+.dart_tool/
+.packages
+build/
+**/ios/Podfile.lock
+**/android/.gradle
+**/android/build
+**/android/app/build
+**/linux/build
+**/macos/build
+**/windows/build
+**/web/build
+
+# IntelliJ related
+.idea/
+*.iml
+
+# VS Code related
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Crash reports
+crashlytics/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.config.dart
