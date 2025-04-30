@@ -9,7 +9,7 @@ spec:
     app: kubetest
   ports:
     - protocol: TCP
-      port: 80 # The port on which the Service will be exposed within the cluster
-      targetPort: 80 # The port your container is listening on
-  type: LoadBalancer # Use LoadBalancer if you are on a cloud provider that supports it
-                   # For local testing or environments without a LoadBalancer, you can use NodePort or Ingress
+      port: 80
+      targetPort: 80
+      nodePort: 30080  #  Added nodePort
+  type: NodePort      # Changed to NodePort
