@@ -2,23 +2,25 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubetest-deployment
+  namespace: kubetest-argo-docker # Add this line
   labels:
     app: kubetest
 spec:
-  replicas: 3 # You can adjust the number of desired instances
+  replicas: 3
   selector:
     matchLabels:
       app: kubetest
   template:
     metadata:
+      namespace: kubetest-argo-docker # Add this line
       labels:
         app: kubetest
     spec:
       containers:
-        - name: kubetest-container # You can keep the same container name
-          image: chackoabraham/kubetest-argo-docker:latest # Updated image name
+        - name: kubetest-container
+          image: chackoabraham/kubetest-argo-docker:latest
           ports:
-            - containerPort: 80 # Assuming your web server inside the container listens on port 80
+            - containerPort: 80
           resources:
             limits:
               cpu: "100m"
