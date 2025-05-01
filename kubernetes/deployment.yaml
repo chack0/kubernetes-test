@@ -15,8 +15,8 @@ spec:
         app: kubetest
     spec:
       containers:
-        - name: kubetest-container
-          image: chackoabraham/kubetest:latest
+        - name: kubetest-container # You can keep the same container name
+          image: chackoabraham/kubetest-argo-docker:latest # Updated image name
           ports:
             - containerPort: 80 # Assuming your web server inside the container listens on port 80
           resources:
