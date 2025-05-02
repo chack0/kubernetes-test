@@ -1,65 +1,74 @@
 pipeline {
-    agent any
-    environment {
-        DOCKER_REGISTRY = 'docker.io' // Default Docker Hub registry
-        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
-        IMAGE_TAG = "${env.GIT_COMMIT}" // Using Git commit SHA as tag
-        DOCKERFILE_PATH = 'Dockerfile' // Dockerfile is in the root
-        KUBE_MANIFESTS_REPO_URL = 'https://github.com/chack0/kubernetes-test.git'
-        KUBE_MANIFESTS_PATH = 'kubernetes' // Manifests are in the 'kubernetes' directory
-        DEPLOYMENT_FILE = 'deployment.yaml'
+    agent {
+        docker {
+            image 'docker/agent:latest' // Using the official Flutter stable image
+            args '-u root' // Run container as root to avoid potential permission issues
+        }
     }
+
+    environment {
+        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
+        DOCKERFILE_PATH = 'Dockerfile'
+        K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git'
+        K8S_MANIFEST_REPO_CRED_ID = '' // Assuming public repo for manifests
+        K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml'
+        DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
+    }
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout Flutter App Code') {
             steps {
-                git credentialsId: 'flutter-app-repo-creds', url: 'https://github.com/chack0/kubernetes-test.git'
+                git(url: 'https://github.com/chack0/kubernetes-test.git',
+                    credentialsId: 'git-id', // Your GitHub token credential ID
+                    branch: 'main')
             }
         }
-        stage('Setup Flutter') {
+
+        stage('Flutter Build') {
             steps {
-                sh 'flutter doctor' // Verify Flutter setup
+                sh 'flutter clean'
+                sh 'flutter pub get'
                 sh 'flutter build web --release'
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Build and Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh "docker build -f ${DOCKERFILE_PATH} -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} ${DOCKER_REGISTRY}"
-                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${IMAGE_TAG}"
+                script {
+                    def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    def imageTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                    docker.build(imageTag, '.')
+                    docker.withRegistry('https://index.docker.io/v1/', "${env.DOCKER_REGISTRY_CRED_ID}") {
+                        docker.image(imageTag).push()
+                    }
+                    env.DOCKER_IMAGE_TAG = imageTag
                 }
             }
         }
+
         stage('Checkout Kubernetes Manifests') {
             steps {
-                git credentialsId: 'kube-manifests-repo-creds', url: "${KUBE_MANIFESTS_REPO_URL}", branch: 'main' // Adjust branch if needed
+                git(url: "${env.K8S_MANIFEST_REPO_URL}",
+                    credentialsId: "${env.K8S_MANIFEST_REPO_CRED_ID}",
+                    branch: 'main',
+                    changelog: false,
+                    poll: false)
             }
         }
-        stage('Update Kubernetes Deployment Manifest') {
+
+        stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    def deploymentFile = readFile "${KUBE_MANIFESTS_PATH}/${DEPLOYMENT_FILE}"
-                    def updatedDeployment = deploymentFile.replaceFirst("image: .*", "image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${IMAGE_TAG}")
-                    writeFile file: "${KUBE_MANIFESTS_PATH}/${DEPLOYMENT_FILE}", text: updatedDeployment
+                    def newImage = env.DOCKER_IMAGE_TAG
+                    sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
+
+                    sh 'git config --global user.email "jenkins@example.com"'
+                    sh 'git config --global user.name "Jenkins"'
+                    sh "git add ${env.K8S_DEPLOYMENT_FILE}"
+                    sh "git commit -m 'Update image tag to ${newImage}'"
+                    sh "git push origin HEAD"
                 }
             }
         }
-        stage('Commit and Push Kubernetes Manifests') {
-            steps {
-                script {
-                    sh "git config user.email 'jenkins@example.com'"
-                    sh "git config user.name 'Jenkins'"
-                    sh "cd ${KUBE_MANIFESTS_PATH}"
-                    sh "git add ${DEPLOYMENT_FILE}"
-                    sh "git commit -m 'Update Docker image tag to ${IMAGE_TAG}'"
-                    withCredentials([usernamePassword(credentialsId: 'kube-manifests-repo-creds', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) { // Assuming same credentials for checkout and push
-                        sh "git push origin main" // Adjust branch if needed
-                    }
-                }
-            }
-        }
-    }
-    triggers {
-        githubPush() // Configure webhook in your GitHub repo to trigger this pipeline
     }
 }
