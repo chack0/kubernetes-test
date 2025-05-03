@@ -12,8 +12,8 @@ spec:
     image: fischerscode/flutter:latest
     resources:
       requests:
-        cpu: 1000m // Increased CPU request as Flutter builds can be resource-intensive
-        memory: 2Gi   // Increased memory request
+        cpu: 1
+        memory: 2048Mi
   - name: docker
     image: docker:latest
     command:
