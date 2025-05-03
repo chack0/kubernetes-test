@@ -77,18 +77,19 @@ spec:
                 container('docker') {
                     script {
                         def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        env.DOCKER_IMAGE_TAG = "<span class="math-inline">\{env\.DOCKER\_IMAGE\_NAME\}\:</span>{gitCommit}"
-                        sh "docker build -t <span class="math-inline">\{env\.DOCKER\_IMAGE\_TAG\} \."
-withRegistry\(credentialsId\: "</span>{env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/') {
-                            sh "docker push <span class="math-inline">\{env\.DOCKER\_IMAGE\_TAG\}"
-\}
-\}
-\}
-\}
-\}
-stage\('Checkout Kubernetes Manifests'\) \{
-steps \{
-git\(url\: "</span>{env.K8S_MANIFEST_REPO_URL}",
+                        env.DOCKER_IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                        sh "docker build -t ${env.DOCKER_IMAGE_TAG} ."
+                        withRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/') {
+                            sh "docker push ${env.DOCKER_IMAGE_TAG}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Checkout Kubernetes Manifests') {
+            steps {
+                git(url: "${env.K8S_MANIFEST_REPO_URL}",
                     credentialsId: "${env.K8S_MANIFEST_REPO_CRED_ID}",
                     branch: 'main',
                     changelog: false,
@@ -104,4 +105,13 @@ git\(url\: "</span>{env.K8S_MANIFEST_REPO_URL}",
                         sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
 
                         sh 'git config --global user.email "jenkins@example.com"'
-                        sh 'git config --global user.
+                        sh 'git config --global user.name "Jenkins"'
+                        sh "git add ${env.K8S_DEPLOYMENT_FILE}"
+                        sh "git commit -m 'Update image tag to ${newImage}'"
+                        sh "git push origin HEAD"
+                    }
+                }
+            }
+        }
+    }
+}
