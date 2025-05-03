@@ -1,35 +1,22 @@
 pipeline {
-    agent {
+agent {
         kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  nodeSelector:
-    kubernetes.io/arch: arm64
-  containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:latest
-    resources:
-      requests:
-        cpu: 1
-        memory: 2048Mi
-    volumeMounts:
-    - name: jenkins-agent-volume
-      mountPath: /home/jenkins/agent
-  - name: docker
-    image: docker:latest
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - name: jenkins-agent-volume
-      mountPath: /home/jenkins/agent
-  volumes:
-  - name: jenkins-agent-volume
-    emptyDir: {}
-"""
+            label 'flutter-agent' // Use the name you gave your pod template
         }
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'your_repo_url'
+            }
+        }
+        stage('Build Flutter') {
+            steps {
+                sh 'flutter doctor'
+                sh 'flutter build apk'
+            }
+        }
+        // ... more stages
     }
 
     environment {
