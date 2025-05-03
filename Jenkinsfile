@@ -1,7 +1,7 @@
 pipeline {
-agent {
-    kubernetes {
-        yaml """
+    agent {
+        kubernetes {
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
@@ -9,19 +9,28 @@ spec:
     kubernetes.io/arch: arm64
   containers:
   - name: jnlp
-    image: fischerscode/flutter:latest
+    image: jenkins/inbound-agent:latest
     resources:
       requests:
         cpu: 1
         memory: 2048Mi
+    volumeMounts:
+    - name: jenkins-agent-volume
+      mountPath: /home/jenkins/agent
   - name: docker
     image: docker:latest
     command:
     - cat
     tty: true
+    volumeMounts:
+    - name: jenkins-agent-volume
+      mountPath: /home/jenkins/agent
+  volumes:
+  - name: jenkins-agent-volume
+    emptyDir: {}
 """
+        }
     }
-}
 
     environment {
         DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
@@ -44,7 +53,14 @@ spec:
 
         stage('Flutter Build') {
             steps {
-                container('jnlp') { // Run Flutter commands in the JNLP agent container
+                container('jnlp') {
+                    sh 'echo "Installing Flutter..."'
+                    sh 'sudo apt-get update'
+                    sh 'sudo apt-get install -y curl git xz-utils libglu1-mesa'
+                    sh 'curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_arm64-3.19.3-stable.tar.xz' // Using a specific ARM64 release
+                    sh 'tar xf flutter_linux_arm64-3.19.3-stable.tar.xz'
+                    sh 'export PATH="$PATH:`pwd`/flutter/bin"'
+                    sh 'flutter doctor -v'
                     sh 'flutter clean'
                     sh 'flutter pub get'
                     sh 'flutter build web --release'
@@ -54,7 +70,7 @@ spec:
 
         stage('Build and Push Docker Image') {
             steps {
-                container('docker') { // Run Docker commands in the 'docker' container
+                container('docker') {
                     script {
                         def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         env.DOCKER_IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
@@ -79,7 +95,7 @@ spec:
 
         stage('Update Kubernetes Manifests') {
             steps {
-                container('jnlp') { // Run Git commands in the JNLP agent container
+                container('jnlp') {
                     script {
                         def newImage = env.DOCKER_IMAGE_TAG
                         sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
