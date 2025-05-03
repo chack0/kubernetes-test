@@ -1,13 +1,13 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml """
+agent {
+    kubernetes {
+        yaml """
 apiVersion: v1
 kind: Pod
 spec:
   containers:
   - name: jnlp
-    image: jenkins/jnlp-slave:latest
+    image: jenkins/jnlp-slave:alpine-jdk11-arm64v8
     resources:
       requests:
         cpu: 100m
@@ -18,8 +18,8 @@ spec:
     - cat
     tty: true
 """
-        }
     }
+}
 
     environment {
         DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
