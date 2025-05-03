@@ -1,8 +1,23 @@
 pipeline {
     agent {
-        docker {
-            image 'docker/agent:latest' // Using the official Flutter stable image
-            args '-u root' // Run container as root to avoid potential permission issues
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: jnlp
+    image: jenkins/jnlp-slave:latest
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  - name: docker
+    image: docker:latest
+    command:
+    - cat
+    tty: true
+"""
         }
     }
 
@@ -13,6 +28,7 @@ pipeline {
         K8S_MANIFEST_REPO_CRED_ID = '' // Assuming public repo for manifests
         K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml'
         DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
+        DOCKER_IMAGE_TAG = '' // Initialize this here, will be set later
     }
 
     stages {
@@ -26,22 +42,25 @@ pipeline {
 
         stage('Flutter Build') {
             steps {
-                sh 'flutter clean'
-                sh 'flutter pub get'
-                sh 'flutter build web --release'
+                container('jnlp') { // Run Flutter commands in the JNLP agent container
+                    sh 'flutter clean'
+                    sh 'flutter pub get'
+                    sh 'flutter build web --release'
+                }
             }
         }
 
         stage('Build and Push Docker Image') {
             steps {
-                script {
-                    def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    def imageTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                    docker.build(imageTag, '.')
-                    docker.withRegistry('https://index.docker.io/v1/', "${env.DOCKER_REGISTRY_CRED_ID}") {
-                        docker.image(imageTag).push()
+                container('docker') { // Run Docker commands in the 'docker' container
+                    script {
+                        def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        env.DOCKER_IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                        sh "docker build -t ${env.DOCKER_IMAGE_TAG} ."
+                        withRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/') {
+                            sh "docker push ${env.DOCKER_IMAGE_TAG}"
+                        }
                     }
-                    env.DOCKER_IMAGE_TAG = imageTag
                 }
             }
         }
@@ -58,15 +77,17 @@ pipeline {
 
         stage('Update Kubernetes Manifests') {
             steps {
-                script {
-                    def newImage = env.DOCKER_IMAGE_TAG
-                    sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
+                container('jnlp') { // Run Git commands in the JNLP agent container
+                    script {
+                        def newImage = env.DOCKER_IMAGE_TAG
+                        sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
 
-                    sh 'git config --global user.email "jenkins@example.com"'
-                    sh 'git config --global user.name "Jenkins"'
-                    sh "git add ${env.K8S_DEPLOYMENT_FILE}"
-                    sh "git commit -m 'Update image tag to ${newImage}'"
-                    sh "git push origin HEAD"
+                        sh 'git config --global user.email "jenkins@example.com"'
+                        sh 'git config --global user.name "Jenkins"'
+                        sh "git add ${env.K8S_DEPLOYMENT_FILE}"
+                        sh "git commit -m 'Update image tag to ${newImage}'"
+                        sh "git push origin HEAD"
+                    }
                 }
             }
         }
