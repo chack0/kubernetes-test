@@ -9,11 +9,11 @@ spec:
     kubernetes.io/arch: arm64
   containers:
   - name: jnlp
-    image: jenkins/inbound-agent:latest
+    image: fischerscode/flutter:latest
     resources:
       requests:
-        cpu: 100m
-        memory: 256Mi
+        cpu: 1000m // Increased CPU request as Flutter builds can be resource-intensive
+        memory: 2Gi   // Increased memory request
   - name: docker
     image: docker:latest
     command:
