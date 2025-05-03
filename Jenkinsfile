@@ -7,7 +7,7 @@ kind: Pod
 spec:
   containers:
   - name: jnlp
-    image: jenkins/inbound-agent:arm64v8
+    image: jenkins/inbound-agent:alpine-jdk11-arm64v8
     resources:
       requests:
         cpu: 100m
