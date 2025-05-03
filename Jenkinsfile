@@ -1,22 +1,8 @@
 pipeline {
-agent {
+    agent {
         kubernetes {
             label 'flutter-agent' // Use the name you gave your pod template
         }
-    }
-    stages {
-        stage('Checkout') {
-            steps {
-                git 'your_repo_url'
-            }
-        }
-        stage('Build Flutter') {
-            steps {
-                sh 'flutter doctor'
-                sh 'flutter build apk'
-            }
-        }
-        // ... more stages
     }
 
     environment {
@@ -32,13 +18,13 @@ agent {
     stages {
         stage('Checkout Flutter App Code') {
             steps {
-                git(url: 'https://github.com/chack0/kubernetes-test.git',
+                git url: 'https://github.com/chack0/kubernetes-test.git',
                     credentialsId: 'git-id', // Your GitHub token credential ID
-                    branch: 'main')
+                    branch: 'main'
             }
         }
-                 
-    stage('Flutter Build') {
+
+        stage('Flutter Build') {
             steps {
                 container('jnlp') {
                     sh 'echo "Installing necessary tools..."'
@@ -71,7 +57,7 @@ agent {
                         def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         env.DOCKER_IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
                         sh "docker build -t ${env.DOCKER_IMAGE_TAG} ."
-                        withRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/') {
+                        withRegistry credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/' {
                             sh "docker push ${env.DOCKER_IMAGE_TAG}"
                         }
                     }
@@ -81,11 +67,11 @@ agent {
 
         stage('Checkout Kubernetes Manifests') {
             steps {
-                git(url: "${env.K8S_MANIFEST_REPO_URL}",
+                git url: "${env.K8S_MANIFEST_REPO_URL}",
                     credentialsId: "${env.K8S_MANIFEST_REPO_CRED_ID}",
                     branch: 'main',
                     changelog: false,
-                    poll: false)
+                    poll: false
             }
         }
 
