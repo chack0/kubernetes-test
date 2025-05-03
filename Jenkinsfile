@@ -5,9 +5,11 @@ agent {
 apiVersion: v1
 kind: Pod
 spec:
+  nodeSelector:
+    kubernetes.io/arch: arm64
   containers:
   - name: jnlp
-    image: jenkins/inbound-agent:lts-jdk17-debian-slim-arm64
+    image: jenkins/inbound-agent:latest
     resources:
       requests:
         cpu: 100m
