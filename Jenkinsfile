@@ -28,8 +28,8 @@ pipeline {
             steps {
                 container('jnlp') {
                     sh 'echo "Installing necessary tools..."'
-                    sh 'sudo apt-get update'
-                    sh 'sudo apt-get install -y curl git xz-utils' // Install basic tools
+                    sh 'apt-get update'
+                    sh 'apt-get install -y curl git xz-utils' // Install basic tools
 
                     sh 'echo "Downloading Flutter SDK..."'
                     sh 'curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_arm64-3.19.3-stable.tar.xz'
