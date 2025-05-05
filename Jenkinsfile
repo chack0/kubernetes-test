@@ -27,19 +27,10 @@ pipeline {
         stage('Flutter Build') {
             steps {
                 container('jnlp') {
-                    sh 'echo "Installing necessary tools..."'
-                    // sh 'apt-get update'
-                    sh 'apt-get install -y curl git xz-utils' // Install basic tools
-
-                    sh 'echo "Downloading Flutter SDK..."'
-                    sh 'curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_arm64-3.19.3-stable.tar.xz'
-
-                    sh 'echo "Extracting Flutter SDK..."'
-                    sh 'mkdir -p flutter'
-                    sh 'tar xf flutter_linux_arm64-3.19.3-stable.tar.xz -C flutter --strip-components=1'
-
                     sh 'echo "Setting up Flutter environment..."'
-                    sh 'export PATH="$PATH:`pwd`/flutter/bin"'
+                    sh 'export PATH="$PATH:/opt/flutter/bin"' // Ensure PATH is correctly set
+
+                    sh 'echo "Running Flutter Doctor..."'
                     sh 'flutter doctor -v'
 
                     sh 'echo "Building Flutter web app..."'
