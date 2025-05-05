@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            label 'flutter-agent' // Use the name you gave your pod template
+            label 'test-flutter-agent' // Use the name you gave your pod template
         }
     }
 
