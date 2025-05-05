@@ -17,15 +17,15 @@ pipeline {
 
     stages {
         stage('Checkout Flutter App Code') {
-            // steps {
+            steps {
                 git url: 'https://github.com/chack0/kubernetes-test.git',
                     credentialsId: 'git-id', // Your GitHub token credential ID
                     branch: 'main'
-            // }
+            }
         }
 
         stage('Flutter Build') {
-            // steps {
+            steps {
                 container('jnlp') {
                     sh 'echo "Installing necessary tools..."'
                     sh 'apt-get update'
@@ -47,11 +47,11 @@ pipeline {
                     sh 'flutter pub get'
                     sh 'flutter build web --release'
                 }
-            // }
+            }
         }
 
         stage('Build and Push Docker Image') {
-            // steps {
+            steps {
                 container('docker') {
                     script {
                         def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
@@ -62,21 +62,21 @@ pipeline {
                         }
                     }
                 }
-            // }
+            }
         }
 
         stage('Checkout Kubernetes Manifests') {
-            // steps {
+            steps {
                 git url: "${env.K8S_MANIFEST_REPO_URL}",
                     credentialsId: "${env.K8S_MANIFEST_REPO_CRED_ID}",
                     branch: 'main',
                     changelog: false,
                     poll: false
-            // }
+            }
         }
 
         stage('Update Kubernetes Manifests') {
-            // steps {
+            steps {
                 container('jnlp') {
                     script {
                         def newImage = env.DOCKER_IMAGE_TAG
@@ -89,7 +89,7 @@ pipeline {
                         sh "git push origin HEAD"
                     }
                 }
-            // }
+            }
         }
     }
 }
