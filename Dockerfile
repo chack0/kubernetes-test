@@ -2,22 +2,23 @@ FROM jenkins/inbound-agent:latest
 
 USER root
 
-# Install necessary dependencies for Flutter and file utility, including sudo
+# Install necessary dependencies for Flutter and file utility
 RUN apt-get update && \
-    apt-get install -y curl git xz-utils libglu1-mesa file sudo
+    apt-get install -y curl git xz-utils libglu1-mesa file
 
 # Download Flutter SDK with error checking and verification
 RUN curl -f -L -o flutter_linux_arm64.tar.xz https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.29.3-stable.tar.xz || exit 1
 RUN ls -l flutter_linux_arm64.tar.xz
 RUN file flutter_linux_arm64.tar.xz
 
-# Extract Flutter SDK
+# Extract Flutter SDK and set permissions
 RUN mkdir -p /opt/flutter && \
     tar xf flutter_linux_arm64.tar.xz -C /opt/flutter --strip-components=1 && \
-    rm flutter_linux_arm64.tar.xz
+    rm flutter_linux_arm64.tar.xz && \
+    chown -R jenkins:jenkins /opt/flutter
 
-# Set Flutter environment variable
-ENV PATH="$PATH:/opt/flutter/bin"
+# Set Flutter environment variable for the jenkins user
+ENV PATH="/opt/flutter/bin:${PATH}"
 
 # Switch back to the jenkins user
 USER jenkins
