@@ -27,12 +27,13 @@ pipeline {
         stage('Flutter Build') {
             steps {
                 container('jnlp') {
+                    environment {
+                        PATH = "$PATH:/opt/flutter/bin"
+                    }
                     sh 'echo "Setting up Flutter environment..."'
-                    sh 'export PATH="$PATH:/opt/flutter/bin"' // Ensure PATH is correctly set
-
+                    sh 'echo "Current PATH: $PATH"' // Add this for debugging
                     sh 'echo "Running Flutter Doctor..."'
                     sh 'flutter doctor -v'
-
                     sh 'echo "Building Flutter web app..."'
                     sh 'flutter clean'
                     sh 'flutter pub get'
@@ -40,7 +41,7 @@ pipeline {
                 }
             }
         }
-
+Key Change:
         stage('Build and Push Docker Image') {
             steps {
                 container('docker') {
