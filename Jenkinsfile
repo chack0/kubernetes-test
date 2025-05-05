@@ -28,7 +28,7 @@ pipeline {
             steps {
                 container('jnlp') {
                     sh 'echo "Installing necessary tools..."'
-                    sh 'apt-get update'
+                    // sh 'apt-get update'
                     sh 'apt-get install -y curl git xz-utils' // Install basic tools
 
                     sh 'echo "Downloading Flutter SDK..."'
