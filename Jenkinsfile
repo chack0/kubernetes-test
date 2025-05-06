@@ -5,12 +5,12 @@ pipeline {
         DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker' // From old Jenkinsfile
         DOCKERFILE_PATH = 'Dockerfile' // Assuming your Dockerfile is at the root
         K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git' // From old Jenkinsfile
-        K8S_MANIFEST_REPO_CRED_ID = 'git-id' // Assuming you want to use this credential for manifest repo as well
+        K8S_MANIFEST_REPO_CRED_ID = '' // Manifest repo is public, so no credentials needed
         K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml' // From old Jenkinsfile
-        DOCKER_REGISTRY_CRED_ID = 'doc-id' // From old Jenkinsfile
+        DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
         IMAGE_TAG = '' // Will be set dynamically
         FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release' // Using release build
-        GIT_PUSH_CREDENTIALS_ID = 'git-id' // Using the same Git credential for pushing manifests
+        GIT_PUSH_CREDENTIALS_ID = '' // Manifest repo is public, so no credentials needed for push either
     }
 
 
@@ -18,7 +18,6 @@ pipeline {
         stage('Checkout Flutter App Code') {
             steps {
                 git url: 'https://github.com/chack0/kubernetes-test.git',
-                    credentialsId: 'git-id',
                     branch: 'main'
             }
         }
@@ -45,7 +44,6 @@ pipeline {
         stage('Checkout Kubernetes Manifests') {
             steps {
                 git url: "${env.K8S_MANIFEST_REPO_URL}",
-                    credentialsId: "${env.K8S_MANIFEST_REPO_CRED_ID}",
                     branch: 'main',
                     changelog: false,
                     poll: false
@@ -68,9 +66,7 @@ pipeline {
 
         stage('Push Kubernetes Manifests') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${env.GIT_PUSH_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "git push origin HEAD"
-                }
+                sh "git push origin HEAD"
             }
         }
     }
