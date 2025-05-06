@@ -4,6 +4,7 @@ metadata:
   name: jenkins-pvc
   namespace: jenkins # Ensure this matches your Argo CD namespace
 spec:
+  storageClassName: local-path  # <--- IMPORTANT: Specify the StorageClass
   accessModes:
     - ReadWriteOnce
   resources:
