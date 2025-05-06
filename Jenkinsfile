@@ -59,12 +59,7 @@ pipeline {
                 script {
                     def newImage = env.IMAGE_TAG
                     echo "Value of newImage before sed: ${newImage}" // Keep this for debugging
-                    sh """
-                    set -e
-                    deployment_file="${env.K8S_DEPLOYMENT_FILE}"
-                    image_tag="${newImage}"
-                    sed -i "s#image: .*#image: ${image_tag}#" "\${deployment_file}"
-                    """
+                    sh "sed -i \"s#image: .*#image: ${newImage}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
                     sh "git add ${env.K8S_DEPLOYMENT_FILE}"
@@ -72,7 +67,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Push Kubernetes Manifests') {
             steps {
                 script {
