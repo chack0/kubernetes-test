@@ -28,13 +28,13 @@ pipeline {
             }
         }
 
-         stage('Build and Push Docker Image') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}" // Set IMAGE_TAG as environment variable
+                    env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}" // Correctly set IMAGE_TAG
 
-                    echo "Building Docker image with tag: ${env.IMAGE_TAG}" // Add this line for debugging
+                    echo "Building Docker image with tag: ${env.IMAGE_TAG}"
 
                     sh "docker build -t ${env.IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
