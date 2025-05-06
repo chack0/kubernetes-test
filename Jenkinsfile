@@ -28,17 +28,18 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image') {
+         stage('Build and Push Docker Image') {
             steps {
                 script {
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}" // Correctly set IMAGE_TAG
+                    def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                    env.IMAGE_TAG = imageNameWithTag // Ensure the environment variable is set
 
-                    echo "Building Docker image with tag: ${env.IMAGE_TAG}"
+                    echo "Building Docker image with tag: ${imageNameWithTag}" // Add this line for debugging
 
-                    sh "docker build -t ${env.IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
+                    sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
-                        sh "docker push ${env.IMAGE_TAG}"
+                        sh "docker push ${imageNameWithTag}"
                     }
                 }
             }
@@ -48,7 +49,6 @@ pipeline {
             steps {
                 git url: "${env.K8S_MANIFEST_REPO_URL}",
                     branch: 'main',
-                    credentialsId: "${env.GIT_PUSH_CREDENTIALS_ID}", // While public, good practice if it becomes private
                     changelog: false,
                     poll: false
             }
@@ -57,12 +57,13 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    echo "Value of IMAGE_TAG before sed: ${env.IMAGE_TAG}" // Keep this for debugging
-                    sh "sed -i \"s#image: .*#image: ${env.IMAGE_TAG}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
+                    def newImage = env.IMAGE_TAG
+                    echo "Value of newImage before sed: ${newImage}" // Keep this for debugging
+                    sh "sed -i \"s#image: .*#image: ${newImage}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
                     sh "git add ${env.K8S_DEPLOYMENT_FILE}"
-                    sh "git commit -m 'Update image tag to ${env.IMAGE_TAG}'"
+                    sh "git commit -m 'Update image tag to ${newImage}'"
                 }
             }
         }
@@ -72,13 +73,12 @@ pipeline {
                 script {
                     def githubRepoUrl = "${env.K8S_MANIFEST_REPO_URL}"
                     def credentialsId = "${env.GIT_PUSH_CREDENTIALS_ID}"
+                    def cred = credentials("${credentialsId}") // Get the credential object
 
-                    withCredentials([usernamePassword(credentialsId: credentialsId, usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_PASSWORD')]) {
-                        def authenticatedRepoUrl = "https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
+                    def authenticatedRepoUrl = "https://${cred.username}:${cred.password}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
 
-                        sh "git remote set-url origin ${authenticatedRepoUrl}"
-                        sh "git push origin HEAD"
-                    }
+                    sh "git remote set-url origin ${authenticatedRepoUrl}"
+                    sh "git push origin HEAD"
                 }
             }
         }
