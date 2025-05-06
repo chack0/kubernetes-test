@@ -57,9 +57,9 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    def newImage = env.IMAGE_TAG // Ensure we are using the environment variable set in the previous stage
-                    sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
-
+                    def newImage = env.IMAGE_TAG
+                    echo "Value of newImage before sed: ${newImage}" // Keep this for debugging
+                    sh "sed -i \"s#image: .*#image: ${newImage}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
                     sh "git add ${env.K8S_DEPLOYMENT_FILE}"
@@ -73,9 +73,9 @@ pipeline {
                 script {
                     def githubRepoUrl = "${env.K8S_MANIFEST_REPO_URL}"
                     def credentialsId = "${env.GIT_PUSH_CREDENTIALS_ID}"
-                    def usernamePassword = credentials("${credentialsId}") // Get the username and password
+                    def cred = credentials("${credentialsId}") // Get the credential object
 
-                    def authenticatedRepoUrl = "https://${usernamePassword.username}:${usernamePassword.password}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
+                    def authenticatedRepoUrl = "https://${cred.username}:${cred.password}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
 
                     sh "git remote set-url origin ${authenticatedRepoUrl}"
                     sh "git push origin HEAD"
