@@ -10,7 +10,7 @@ pipeline {
         DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
         IMAGE_TAG = '' // Will be set dynamically
         FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release' // Using release build
-        GIT_PUSH_CREDENTIALS_ID = '' // Manifest repo is public, so no credentials needed for push either
+        GIT_PUSH_CREDENTIALS_ID = 'github-https-push' // Replace with your actual credential ID
     }
 
 
@@ -57,7 +57,7 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    def newImage = env.IMAGE_TAG
+                    def newImage = env.IMAGE_TAG // Ensure we are using the environment variable set in the previous stage
                     sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
 
                     sh 'git config --global user.email "jenkins@example.com"'
@@ -70,7 +70,16 @@ pipeline {
 
         stage('Push Kubernetes Manifests') {
             steps {
-                sh "git push origin HEAD"
+                script {
+                    def githubRepoUrl = "${env.K8S_MANIFEST_REPO_URL}"
+                    def credentialsId = "${env.GIT_PUSH_CREDENTIALS_ID}"
+                    def usernamePassword = credentials("${credentialsId}") // Get the username and password
+
+                    def authenticatedRepoUrl = "https://${usernamePassword.username}:${usernamePassword.password}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
+
+                    sh "git remote set-url origin ${authenticatedRepoUrl}"
+                    sh "git push origin HEAD"
+                }
             }
         }
     }
