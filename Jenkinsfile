@@ -28,17 +28,18 @@ pipeline {
             }
         }
 
+
         stage('Build and Push Docker Image') {
             steps {
                 script {
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
                     sh "docker build -t ${env.IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
-                    withDockerRegistry credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}" {
+                    withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
                         sh "docker push ${env.IMAGE_TAG}"
                     }
                 }
-            }
+           }
         }
 
         stage('Checkout Kubernetes Manifests') {
