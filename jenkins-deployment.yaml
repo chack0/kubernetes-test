@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
-  namespace: jenkins # Ensure this matches your Argo CD namespace
+  namespace: jenkins
 spec:
   replicas: 1
   selector:
@@ -17,12 +17,12 @@ spec:
       - name: jenkins
         image: your-dockerhub-username/jenkins-flutter-docker:latest
         ports:
-        - containerPort: 8080
-        - containerPort: 50000
+        - containerPort: 8081 # Changed containerPort for HTTP
+        - containerPort: 50001 # Changed containerPort for JNLP
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
-          claimName: jenkins-pvc # You'll need to create this PVC separately
+          claimName: jenkins-pvc

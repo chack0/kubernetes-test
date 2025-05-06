@@ -2,17 +2,17 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jenkins-service
-  namespace: jenkins # Ensure this matches your Argo CD namespace
+  namespace: jenkins
 spec:
   type: NodePort
   selector:
     app: jenkins
   ports:
   - name: http
-    port: 8080
-    targetPort: 8080
-    nodePort: 30081 # Changed nodePort for Jenkins UI
+    port: 8080 # Keep the service's internal port
+    targetPort: 8081 # Changed targetPort to match containerPort
+    nodePort: 30081
   - name: jnlp
-    port: 50000
-    targetPort: 50000
-    nodePort: 30000 # Keeping the JNLP port as is
+    port: 50000 # Keep the service's internal port
+    targetPort: 50001 # Changed targetPort to match containerPort
+    nodePort: 30000
