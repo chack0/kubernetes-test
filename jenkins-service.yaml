@@ -11,8 +11,8 @@ spec:
   - name: http
     port: 8080
     targetPort: 8080
-    nodePort: 30080 # Choose an available NodePort
+    nodePort: 30081 # Changed nodePort for Jenkins UI
   - name: jnlp
     port: 50000
     targetPort: 50000
-    nodePort: 30000 # Choose an available NodePort
+    nodePort: 30000 # Keeping the JNLP port as is
