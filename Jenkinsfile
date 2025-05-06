@@ -67,18 +67,19 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Push Kubernetes Manifests') {
             steps {
                 script {
                     def githubRepoUrl = "${env.K8S_MANIFEST_REPO_URL}"
                     def credentialsId = "${env.GIT_PUSH_CREDENTIALS_ID}"
-                    def cred = credentials("${credentialsId}") // Get the credential object
 
-                    def authenticatedRepoUrl = "https://${cred.username}:${cred.password}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
+                    withCredentials([usernamePassword(credentialsId: credentialsId, usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_PASSWORD')]) {
+                        def authenticatedRepoUrl = "https://${GITHUB_USERNAME}:${GITHUB_PASSWORD}@${githubRepoUrl.substring(githubRepoUrl.indexOf('//') + 2)}"
 
-                    sh "git remote set-url origin ${authenticatedRepoUrl}"
-                    sh "git push origin HEAD"
+                        sh "git remote set-url origin ${authenticatedRepoUrl}"
+                        sh "git push origin HEAD"
+                    }
                 }
             }
         }
