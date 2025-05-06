@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+  namespace: jenkins # Ensure this matches your Argo CD namespace
+spec:
+  type: NodePort
+  selector:
+    app: jenkins
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    nodePort: 30080 # Choose an available NodePort
+  - name: jnlp
+    port: 50000
+    targetPort: 50000
+    nodePort: 30000 # Choose an available NodePort
