@@ -1,19 +1,18 @@
 pipeline {
-    agent {
-        kubernetes {
-            label 'test-flutter-agent' // Keep the same label for the agent
-        }
-    }
+    agent any // Running directly on the Jenkins master pod
 
     environment {
-        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
-        DOCKERFILE_PATH = 'Dockerfile' // Should point to your self-contained Dockerfile
-        K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git'
-        K8S_MANIFEST_REPO_CRED_ID = '' // Assuming public repo for manifests
-        K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml'
-        DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
-        DOCKER_IMAGE_TAG = '' // Will be set during build
+        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker' // From old Jenkinsfile
+        DOCKERFILE_PATH = 'Dockerfile' // Assuming your Dockerfile is at the root
+        K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git' // From old Jenkinsfile
+        K8S_MANIFEST_REPO_CRED_ID = 'git-id' // Assuming you want to use this credential for manifest repo as well
+        K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml' // From old Jenkinsfile
+        DOCKER_REGISTRY_CRED_ID = 'doc-id' // From old Jenkinsfile
+        IMAGE_TAG = '' // Will be set dynamically
+        FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release' // Using release build
+        GIT_PUSH_CREDENTIALS_ID = 'git-id' // Using the same Git credential for pushing manifests
     }
+
 
     stages {
         stage('Checkout Flutter App Code') {
@@ -24,16 +23,20 @@ pipeline {
             }
         }
 
+        stage('Build Flutter Web App') {
+            steps {
+                sh "${env.FLUTTER_WEB_BUILD_COMMAND}"
+            }
+        }
+
         stage('Build and Push Docker Image') {
             steps {
-                container('jnlp') { // Use the 'jnlp' container for building
-                    script {
-                        def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                        env.DOCKER_IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                        sh "docker build -t ${env.DOCKER_IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
-                        withRegistry credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/' {
-                            sh "docker push ${env.DOCKER_IMAGE_TAG}"
-                        }
+                script {
+                    def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                    sh "docker build -t ${env.IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
+                    withRegistry credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}", url: 'https://index.docker.io/v1/' {
+                        sh "docker push ${env.IMAGE_TAG}"
                     }
                 }
             }
@@ -51,17 +54,22 @@ pipeline {
 
         stage('Update Kubernetes Manifests') {
             steps {
-                container('jnlp') {
-                    script {
-                        def newImage = env.DOCKER_IMAGE_TAG
-                        sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
+                script {
+                    def newImage = env.IMAGE_TAG
+                    sh "sed -i 's#image: .*#image: ${newImage}#' ${env.K8S_DEPLOYMENT_FILE}"
 
-                        sh 'git config --global user.email "jenkins@example.com"'
-                        sh 'git config --global user.name "Jenkins"'
-                        sh "git add ${env.K8S_DEPLOYMENT_FILE}"
-                        sh "git commit -m 'Update image tag to ${newImage}'"
-                        sh "git push origin HEAD"
-                    }
+                    sh 'git config --global user.email "jenkins@example.com"'
+                    sh 'git config --global user.name "Jenkins"'
+                    sh "git add ${env.K8S_DEPLOYMENT_FILE}"
+                    sh "git commit -m 'Update image tag to ${newImage}'"
+                }
+            }
+        }
+
+        stage('Push Kubernetes Manifests') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${env.GIT_PUSH_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                    sh "git push origin HEAD"
                 }
             }
         }
