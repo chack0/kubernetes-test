@@ -28,14 +28,18 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image') {
+         stage('Build and Push Docker Image') {
             steps {
                 script {
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.IMAGE_TAG = "${env.DOCKER_IMAGE_NAME}:${gitCommit}" // DOCKER_IMAGE_NAME is already set as 'chackoabraham/kubetest-argo-docker'
-                    sh "docker build -t ${env.IMAGE_TAG} -f ${env.DOCKERFILE_PATH} ."
+                    def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
+                    env.IMAGE_TAG = imageNameWithTag // Ensure the environment variable is set
+
+                    echo "Building Docker image with tag: ${imageNameWithTag}" // Add this line for debugging
+
+                    sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
-                        sh "docker push ${env.IMAGE_TAG}"
+                        sh "docker push ${imageNameWithTag}"
                     }
                 }
             }
