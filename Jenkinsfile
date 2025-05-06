@@ -41,9 +41,6 @@ pipeline {
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
                         sh "docker push ${imageNameWithTag}"
                     }
-                    // Stash the IMAGE_TAG
-                    writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
-                    stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
                 }
             }
         }
@@ -60,9 +57,7 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    // Unstash the IMAGE_TAG
-                    unstash name: 'IMAGE_TAG_VALUE'
-                    def newImage = readFile 'image_tag.txt'
+                    def newImage = env.IMAGE_TAG
                     echo "Value of newImage before sed: ${newImage}" // Keep this for debugging
                     sh "sed -i \"s#image: .*#image: ${newImage}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
                     sh 'git config --global user.email "jenkins@example.com"'
@@ -72,7 +67,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Push Kubernetes Manifests') {
             steps {
                 script {
