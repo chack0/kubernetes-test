@@ -95,7 +95,7 @@ pipeline {
         //         }
         //     }
         // }
-        
+
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
@@ -112,7 +112,8 @@ pipeline {
                     echo "--- Deployment File Content BEFORE Update ---"
                     echo "${deploymentContent}"
 
-                    def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
+                    // More robust regex to handle potential spacing variations
+                    def updatedContent = deploymentContent.replaceAll(/(?m)^ *image: *.*\r?\n/, "image: ${newImage}\n")
 
                     writeFile file: deploymentFile, text: updatedContent
                     echo "--- Deployment File Content AFTER Update ---"
@@ -121,15 +122,7 @@ pipeline {
 
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
-
-                    // Explicitly check the status of the deployment file
-                    sh "git status ${deploymentFile}"
-
                     sh "git add ${deploymentFile}"
-
-                    // Check the status after adding
-                    sh "git status ${deploymentFile}"
-
                     sh "git commit -m 'Update image tag to ${newImage}'"
 
                     echo "--- End Update Kubernetes Manifests ---"
