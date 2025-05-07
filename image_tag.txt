@@ -1,1 +1,1 @@
-chackoabraham/kubetest-argo-docker:87b6fb4
+chackoabraham/kubetest-argo-docker:0edd32e
