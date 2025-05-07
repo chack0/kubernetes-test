@@ -36,7 +36,7 @@ pipeline {
                     echo "--- Build and Push Docker Image ---"
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                    echi "===youre Here===="
+                    echo "===youre Here===="
                     echo "Value of : [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
                     
                     // Set env.IMAGE_TAG directly in the Groovy script
