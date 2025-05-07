@@ -40,7 +40,7 @@ pipeline {
                     echo "Value of : [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
                     
                     // Set env.IMAGE_TAG directly in the Groovy script
-                    env.IMAGE_TAG = ${imageNameWithTag}
+                    env.IMAGE_TAG = '${imageNameWithTag}'
                     echo "Git Commit: ${gitCommit}"
                     echo "Image Name with Tag: ${imageNameWithTag}"
                     echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]"
