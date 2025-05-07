@@ -88,8 +88,8 @@ pipeline {
 
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
-                    sh "git add ${deploymentFile}"
-                    sh "git commit -m 'Update image tag to ${newImage}'"
+                    sh 'git add ${deploymentFile}'
+                    sh 'git commit -m 'Update image tag to ${newImage}''
                     echo "--- End Update Kubernetes Manifests ---"
                 }
             }
