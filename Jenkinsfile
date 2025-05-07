@@ -60,7 +60,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Checkout Kubernetes Manifests') {
             steps {
                 git url: "${env.K8S_MANIFEST_REPO_URL}",
@@ -76,6 +76,7 @@ pipeline {
                     echo "--- Update Kubernetes Manifests ---"
                     unstash name: 'IMAGE_TAG_VALUE'
                     echo "Unstashed IMAGE_TAG_VALUE"
+                    echo "--- image tag value using READ : [${readFile 'image_tag.txt'}]"
                     def newImage = readFile 'image_tag.txt'
                     echo "Value of newImage (from file): [${newImage}]" // Checking the read value
                     env.IMAGE_TAG_FROM_FILE = newImage // Setting another env var for extra check
