@@ -32,6 +32,8 @@ pipeline {
             steps {
                 script {
                     echo "--- Build and Push Docker Image ---"
+                    echo "Value of {env.DOCKER_IMAGE_NAME}:${gitCommit}: [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
+
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
 
