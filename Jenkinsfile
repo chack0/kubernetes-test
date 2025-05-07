@@ -50,12 +50,12 @@ pipeline {
                         sh "docker push ${imageNameWithTag}"
                     }
 
-                    echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
+                    // echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
                     // Stash the IMAGE_TAG
                     // writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
                     writeFile file: 'image_tag.txt', text: imageNameWithTag
                     stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
-                    echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
+                    // echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
                     echo "--- End Build and Push Docker Image ---"
                 }
             }
