@@ -58,16 +58,26 @@ pipeline {
             steps {
                 script {
                     def newImage = env.IMAGE_TAG
-                    echo "Value of newImage before sed: ${newImage}" // Keep this for debugging
-                    sh "sed -i \"s#image: .*#image: ${newImage}#\" ${env.K8S_DEPLOYMENT_FILE}" // Use double quotes
+                    echo "Value of newImage: ${newImage}"
+                    def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
+
+                    // Read the entire YAML file as a string
+                    def deploymentContent = readFile(deploymentFile)
+
+                    // Use Groovy's string replace with a more precise regex
+                    def updatedContent = deploymentContent.replaceAll(/^image: .*/m, "image: ${newImage}")
+
+                    // Write the updated content back to the file
+                    writeFile file: deploymentFile, text: updatedContent
+
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
-                    sh "git add ${env.K8S_DEPLOYMENT_FILE}"
+                    sh "git add ${deploymentFile}"
                     sh "git commit -m 'Update image tag to ${newImage}'"
                 }
             }
         }
-        
+
         stage('Push Kubernetes Manifests') {
             steps {
                 script {
