@@ -112,8 +112,8 @@ pipeline {
                     echo "--- Deployment File Content BEFORE Update ---"
                     echo "${deploymentContent}"
 
-                    // More robust regex to handle potential spacing variations
-                    def updatedContent = deploymentContent.replaceAll(/(?m)^ *image: *.*\r?\n/, "image: ${newImage}\n")
+                    // Regex to match the 'image:' line with potential leading spaces
+                    def updatedContent = deploymentContent.replaceAll(/(?m)^ *image: *.*\r?\n/, "          image: ${newImage}\n")
 
                     writeFile file: deploymentFile, text: updatedContent
                     echo "--- Deployment File Content AFTER Update ---"
