@@ -53,7 +53,7 @@ pipeline {
                     poll: false
             }
         }
-
+        
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
@@ -64,8 +64,8 @@ pipeline {
                     // Read the entire YAML file as a string
                     def deploymentContent = readFile(deploymentFile)
 
-                    // Use Groovy's string replace with a more precise regex
-                    def updatedContent = deploymentContent.replaceAll(/^image: .*/m, "image: ${newImage}")
+                    // Use Groovy's string replace with a more precise regex and correct multiline flag
+                    def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
 
                     // Write the updated content back to the file
                     writeFile file: deploymentFile, text: updatedContent
