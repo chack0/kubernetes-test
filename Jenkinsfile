@@ -28,29 +28,29 @@ pipeline {
             }
         }
 
-        
         stage('Build and Push Docker Image') {
             steps {
                 script {
+                    echo "--- Build and Push Docker Image ---"
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                    env.IMAGE_TAG = imageNameWithTag // Ensure the environment variable is set
 
-                    echo "--- Build and Push Docker Image ---"
+                    // Set env.IMAGE_TAG directly in the Groovy script
+                    env.IMAGE_TAG = imageNameWithTag
                     echo "Git Commit: ${gitCommit}"
                     echo "Image Name with Tag: ${imageNameWithTag}"
-                    echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]" // Added brackets for clarity
+                    echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]"
 
                     sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
                         sh "docker push ${imageNameWithTag}"
                     }
 
-                    echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]" // Added brackets for clarity
+                    echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
                     // Stash the IMAGE_TAG
                     writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
                     stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
-                    echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]" // Added confirmation
+                    echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
                     echo "--- End Build and Push Docker Image ---"
                 }
             }
