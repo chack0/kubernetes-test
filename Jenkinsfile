@@ -70,27 +70,68 @@ pipeline {
             }
         }
 
+        // stage('Update Kubernetes Manifests') {
+        //     steps {
+        //         script {
+        //             echo "--- Update Kubernetes Manifests ---"
+        //             unstash name: 'IMAGE_TAG_VALUE'
+        //             echo "Unstashed IMAGE_TAG_VALUE"
+        //             echo "--- image tag value using READ : [${readFile 'image_tag.txt'}]"
+        //             def newImage = readFile 'image_tag.txt'
+        //             echo "Value of newImage (from file): [${newImage}]" // Checking the read value
+        //             env.IMAGE_TAG_FROM_FILE = newImage // Setting another env var for extra check
+        //             echo "Value of env.IMAGE_TAG_FROM_FILE: [${env.IMAGE_TAG_FROM_FILE}]"
+
+        //             def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
+        //             def deploymentContent = readFile(deploymentFile)
+        //             def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
+        //             writeFile file: deploymentFile, text: updatedContent
+
+        //             sh 'git config --global user.email "jenkins@example.com"'
+        //             sh 'git config --global user.name "Jenkins"'
+        //             sh "git add ${deploymentFile}"
+        //             sh "git commit -m 'Update image tag to ${newImage}'"
+        //             echo "--- End Update Kubernetes Manifests ---"
+        //         }
+        //     }
+        // }
+        
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
                     echo "--- Update Kubernetes Manifests ---"
                     unstash name: 'IMAGE_TAG_VALUE'
-                    echo "Unstashed IMAGE_TAG_VALUE"
-                    echo "--- image tag value using READ : [${readFile 'image_tag.txt'}]"
                     def newImage = readFile 'image_tag.txt'
-                    echo "Value of newImage (from file): [${newImage}]" // Checking the read value
-                    env.IMAGE_TAG_FROM_FILE = newImage // Setting another env var for extra check
-                    echo "Value of env.IMAGE_TAG_FROM_FILE: [${env.IMAGE_TAG_FROM_FILE}]"
+                    echo "New Image Tag: ${newImage}"
 
                     def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
+                    echo "Deployment File Path: ${deploymentFile}"
+
+                    // Read the deployment file content
                     def deploymentContent = readFile(deploymentFile)
+                    echo "--- Deployment File Content BEFORE Update ---"
+                    echo "${deploymentContent}"
+
                     def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
+
                     writeFile file: deploymentFile, text: updatedContent
+                    echo "--- Deployment File Content AFTER Update ---"
+                    def updatedDeploymentContent = readFile(deploymentFile)
+                    echo "${updatedDeploymentContent}"
 
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
+
+                    // Explicitly check the status of the deployment file
+                    sh "git status ${deploymentFile}"
+
                     sh "git add ${deploymentFile}"
+
+                    // Check the status after adding
+                    sh "git status ${deploymentFile}"
+
                     sh "git commit -m 'Update image tag to ${newImage}'"
+
                     echo "--- End Update Kubernetes Manifests ---"
                 }
             }
