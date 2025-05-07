@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:latest AS builder
 
 # Install essential dependencies
 RUN apt-get update && apt-get install -y \
@@ -9,30 +9,16 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-RUN echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+# Install Docker (This is likely unnecessary for just building a Flutter web app)
+# RUN apt-get update && apt-get install -y --no-install-recommends ...
 
-# Add jenkins user and group (if it doesn't exist)
-RUN groupadd -g 999 jenkins || true
-RUN useradd -u 999 -g jenkins -m -d /home/jenkins jenkins || true
+# Add jenkins user and group (This is also likely unnecessary within the build container)
+# RUN groupadd -g 999 jenkins || true
+# RUN useradd -u 999 -g jenkins -m -d /home/jenkins jenkins || true
+# RUN usermod -aG docker jenkins
+# USER jenkins
 
-# Add jenkins user to the docker group
-RUN usermod -aG docker jenkins
-
-# Switch to the jenkins user for subsequent commands
-USER jenkins
-
-# Set the Flutter version (you can adjust this)
+# Set the Flutter version
 ARG FLUTTER_VERSION=stable
 ARG FLUTTER_CHANNEL=$FLUTTER_VERSION
 
@@ -46,7 +32,7 @@ RUN cd /home/jenkins/flutter && git checkout $FLUTTER_CHANNEL
 ENV FLUTTER_HOME="/home/jenkins/flutter"
 ENV PATH="$FLUTTER_HOME/bin:$PATH"
 
-# Download and cache web SDK (optional, but good for web builds)
+# Download and cache web SDK
 RUN flutter doctor -v
 
 # Set the working directory for your app
@@ -58,13 +44,11 @@ COPY . .
 # Install dependencies for your Flutter app
 RUN flutter pub get
 
-# Build the web app (you can adjust build commands based on your needs)
+# Build the web app
 RUN flutter build web --release
 
-# You might want to use a separate stage for serving the built web app
-# For example, using a lightweight web server like Nginx
-
+# Stage 2: Serve the built app with Nginx
 FROM nginx:alpine
-COPY --from=1 /home/jenkins/app/build/web /usr/share/nginx/html
+COPY --from=builder /home/jenkins/app/build/web /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
