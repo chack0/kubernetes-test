@@ -28,19 +28,30 @@ pipeline {
             }
         }
 
-         stage('Build and Push Docker Image') {
+        
+        stage('Build and Push Docker Image') {
             steps {
                 script {
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
                     env.IMAGE_TAG = imageNameWithTag // Ensure the environment variable is set
 
-                    echo "Building Docker image with tag: ${imageNameWithTag}" // Add this line for debugging
+                    echo "--- Build and Push Docker Image ---"
+                    echo "Git Commit: ${gitCommit}"
+                    echo "Image Name with Tag: ${imageNameWithTag}"
+                    echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]" // Added brackets for clarity
 
                     sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
                         sh "docker push ${imageNameWithTag}"
                     }
+
+                    echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]" // Added brackets for clarity
+                    // Stash the IMAGE_TAG
+                    writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
+                    stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
+                    echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]" // Added confirmation
+                    echo "--- End Build and Push Docker Image ---"
                 }
             }
         }
@@ -53,27 +64,28 @@ pipeline {
                     poll: false
             }
         }
-        
+
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    def newImage = env.IMAGE_TAG
-                    echo "Value of newImage: ${newImage}"
+                    echo "--- Update Kubernetes Manifests ---"
+                    unstash name: 'IMAGE_TAG_VALUE'
+                    echo "Unstashed IMAGE_TAG_VALUE"
+                    def newImage = readFile 'image_tag.txt'
+                    echo "Value of newImage (from file): [${newImage}]" // Checking the read value
+                    env.IMAGE_TAG_FROM_FILE = newImage // Setting another env var for extra check
+                    echo "Value of env.IMAGE_TAG_FROM_FILE: [${env.IMAGE_TAG_FROM_FILE}]"
+
                     def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
-
-                    // Read the entire YAML file as a string
                     def deploymentContent = readFile(deploymentFile)
-
-                    // Use Groovy's string replace with a more precise regex and correct multiline flag
                     def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
-
-                    // Write the updated content back to the file
                     writeFile file: deploymentFile, text: updatedContent
 
                     sh 'git config --global user.email "jenkins@example.com"'
                     sh 'git config --global user.name "Jenkins"'
                     sh "git add ${deploymentFile}"
                     sh "git commit -m 'Update image tag to ${newImage}'"
+                    echo "--- End Update Kubernetes Manifests ---"
                 }
             }
         }
