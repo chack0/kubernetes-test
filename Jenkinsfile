@@ -10,7 +10,7 @@ pipeline {
         DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
         IMAGE_TAG = '' // Will be set dynamically
         FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release' // Using release build
-        GIT_PUSH_CREDENTIALS_ID = 'github-https-push' // Replace with your actual credential ID
+        GIT_PUSH_CREDENTIALS_ID = 'git-id' // Replace with your actual credential ID
     }
 
 
