@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubetest-deployment
-  namespace: kubetest-argo-docker # Add this line
+  namespace: kubetest-argo-docker
   labels:
     app: kubetest
 spec:
@@ -12,13 +12,12 @@ spec:
       app: kubetest
   template:
     metadata:
-      namespace: kubetest-argo-docker # Add this line
       labels:
         app: kubetest
     spec:
       containers:
         - name: kubetest-container
-          image: chackoabraham/kubetest-argo-docker:d4fb48c
+          image: chackoabraham/kubetest-argo-docker:latest  # TEMP tag (will be replaced by Jenkins)
           ports:
             - containerPort: 80
           resources:
