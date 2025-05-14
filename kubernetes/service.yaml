@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kubetest-service
-  namespace: kubetest-argo-docker # Add this line
+  namespace: kubetest-argo-docker
   labels:
     app: kubetest
 spec:
@@ -12,5 +12,5 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 30080
+      nodePort: 30081  # Updated NodePort
   type: NodePort
