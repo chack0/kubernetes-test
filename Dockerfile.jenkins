@@ -1,0 +1,58 @@
+FROM jenkins/jenkins:lts-jdk11
+
+USER root
+
+# Install necessary dependencies for Docker and kubectl
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg2 \
+    lsb-release
+
+# Install Docker CLI
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
+RUN apt-get update && apt-get install -y docker-ce-cli
+
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+    rm kubectl
+
+ENV FLUTTER_HOME=/opt/flutter
+ENV PATH="$PATH:$FLUTTER_HOME/bin"
+
+# Install Flutter dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone Flutter stable channel
+RUN git clone https://github.com/flutter/flutter.git /opt/flutter \
+    && cd /opt/flutter \
+    && git checkout stable
+
+# Set permissions for jenkins user
+RUN chown -R jenkins:jenkins /opt/flutter
+
+# Docker-related setup
+RUN groupadd -g 999 docker || true && \
+    usermod -aG docker jenkins
+
+EXPOSE 8080 50000
+
+ENV JENKINS_HOME /var/jenkins_home
+ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
+
+# Switch to jenkins user to run flutter commands and final doctor
+USER jenkins
+RUN flutter config --enable-web \
+    && flutter config --no-analytics \
+    && flutter doctor -v \
+    && dart --version

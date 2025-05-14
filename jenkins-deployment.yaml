@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: chackoabraham/jenkins-flutter-docker:latest
+        image: chackoabraham/jenkins-docker-flutter:latest
         ports:
         - containerPort: 8081 # Changed containerPort for HTTP
         - containerPort: 50001 # Changed containerPort for JNLP
