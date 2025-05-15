@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: kubetest-container
-          image: chackoabraham/kubetest-argo-docker:latest  # TEMP tag (will be replaced by Jenkins)
+          image: chackoabraham/kubetest-argo-docker:816b120
           ports:
             - containerPort: 80
           resources:
