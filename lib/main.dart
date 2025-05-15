@@ -20,7 +20,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Chacko Kubernetes Test',
       home: Scaffold(
-        appBar: AppBar(title: const Text('Susan Thomas Kubernetes')),
+        appBar: AppBar(
+            title: const Text('Thomas Abraham (Thu 15 May 2:03PM) Kubernetes')),
         body: const SizedBox.expand(
           child: HtmlElementView(viewType: 'my-iframe'),
         ),
