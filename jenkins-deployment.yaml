@@ -23,7 +23,7 @@ spec:
           runAsUser: 1000          # your jenkins user id inside container; adjust if needed
           runAsGroup: 999          # host docker group id
           fsGroup: 999             # sets permissions on volumes
-          privileged: true         # needed for docker socket access
+          # privileged: true         # needed for docker socket access
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
