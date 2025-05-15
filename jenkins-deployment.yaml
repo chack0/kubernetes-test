@@ -20,7 +20,8 @@ spec:
         - containerPort: 8081
         - containerPort: 50001
         securityContext:
-          privileged: true # 🔐 Required for Docker socket access
+          privileged: true       # Allows Docker socket access inside container
+          runAsUser: 0           # Run container as root for permissions
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
