@@ -1,35 +1,13 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: jenkins
-  namespace: jenkins
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: jenkins
-  template:
-    metadata:
-      labels:
-        app: jenkins
-    spec:
-      containers:
-      - name: jenkins
-        image: chackoabraham/jenkins-docker-flutter:latest
-        ports:
-        - containerPort: 8081
-        - containerPort: 50001
-        securityContext:
-          privileged: true # 🔐 Required for Docker socket access
-        volumeMounts:
-        - name: jenkins-data
-          mountPath: /var/jenkins_home
-        - name: docker-socket
-          mountPath: /var/run/docker.sock
-      volumes:
-      - name: jenkins-data
-        persistentVolumeClaim:
-          claimName: jenkins-pvc
-      - name: docker-socket
-        hostPath:
-          path: /var/run/docker.sock
+containers:
+- name: jenkins
+  image: chackoabraham/jenkins-docker-flutter:latest
+  ports:
+  - containerPort: 8081
+  - containerPort: 50001
+  securityContext:
+    privileged: true  # 👈 This is essential
+  volumeMounts:
+  - name: jenkins-data
+    mountPath: /var/jenkins_home
+  - name: docker-socket
+    mountPath: /var/run/docker.sock
