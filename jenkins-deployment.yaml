@@ -17,13 +17,15 @@ spec:
       - name: jenkins
         image: chackoabraham/jenkins-docker-flutter:latest
         ports:
-        - containerPort: 8081 # Changed containerPort for HTTP
-        - containerPort: 50001 # Changed containerPort for JNLP
+        - containerPort: 8081
+        - containerPort: 50001
+        securityContext:
+          privileged: true # 🔐 Required for Docker socket access
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
         - name: docker-socket
-          mountPath: /var/run/docker.sock # Mount the host's Docker socket
+          mountPath: /var/run/docker.sock
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
