@@ -9,6 +9,6 @@ spec:
     app: jenkins  # adjust to match your deployment labels
   ports:
     - port: 8080
-      targetPort: 8081
+      targetPort: 8080
       nodePort: 30080  # optional; if omitted, Kubernetes will assign one in 30000–32767
       protocol: TCP
