@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kubetest-service
-  namespace: default
+  namespace: kubetest-argo-docker
   labels:
     app: kubetest
 spec:
