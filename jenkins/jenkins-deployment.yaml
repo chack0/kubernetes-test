@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
-  namespace: default
+  namespace: jenkins
 spec:
   replicas: 1
   selector:
@@ -14,7 +14,7 @@ spec:
         app: jenkins
     spec:
       nodeSelector:
-        kubernetes.io/hostname: kubemaster
+        kubernetes.io/hostname: kubeworker02
       tolerations:
       - key: "node-role.kubernetes.io/control-plane"
         operator: "Exists"
