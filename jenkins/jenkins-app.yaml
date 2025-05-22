@@ -8,13 +8,11 @@ spec:
   source:
     repoURL: https://github.com/chack0/kubernetes-test.git
     targetRevision: HEAD
-    path: ./ # Assuming your Jenkins manifests are at the root of the repo
+    path: jenkins  # folder where your deployment YAMLs are
   destination:
     server: https://kubernetes.default.svc
-    namespace: jenkins
+    namespace: default
   syncPolicy:
     automated:
-      prune: true
       selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
+      prune: true
