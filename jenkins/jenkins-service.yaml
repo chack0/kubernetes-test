@@ -1,14 +1,22 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: jenkins
-  namespace: default  # or your relevant namespace
+  name: jenkins-service # Changed name for consistency
+  namespace: jenkins # Must match the deployment's namespace
+  labels:
+    app: jenkins
 spec:
-  type: NodePort
+  type: NodePort # Expose Jenkins via NodePort
   selector:
-    app: jenkins  # adjust to match your deployment labels
+    app: jenkins # Selects pods with label app: jenkins
   ports:
-    - port: 8080
-      targetPort: 8080
-      nodePort: 30080  # optional; if omitted, Kubernetes will assign one in 30000–32767
+    - name: http
       protocol: TCP
+      port: 8080 # Internal service port (common for Jenkins)
+      targetPort: 8081 # Port on the pod (matches containerPort in deployment)
+      nodePort: 30081 # External NodePort for Jenkins UI
+    - name: jnlp
+      protocol: TCP
+      port: 50000 # Internal service port for JNLP
+      targetPort: 50001 # Port on the pod for JNLP (matches containerPort in deployment)
+      nodePort: 30000 # External NodePort for Jenkins JNLP

@@ -2,7 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
-  namespace: jenkins
+  namespace: jenkins # Ensure this namespace exists or is created by Argo CD
+  labels:
+    app: jenkins
 spec:
   replicas: 1
   selector:
@@ -13,32 +15,46 @@ spec:
       labels:
         app: jenkins
     spec:
+      # NodeSelector to force the pod to schedule on the kubemaster node
       nodeSelector:
-        kubernetes.io/hostname: kubeworker02
+        kubernetes.io/hostname: kubemaster
+      # Toleration for the control-plane taint, allowing scheduling on kubemaster
       tolerations:
       - key: "node-role.kubernetes.io/control-plane"
         operator: "Exists"
         effect: "NoSchedule"
+      serviceAccountName: jenkins-service-account # Ensure this service account exists or is created
       containers:
       - name: jenkins
-        image: chackoabraham/jenkins-docker-flutter:latest
+        image: chackoabraham/jenkins-docker-flutter:latest # Your custom Jenkins image
         ports:
-        - containerPort: 8081
-        - containerPort: 50001
-        securityContext:
-          runAsUser: 1000
-          runAsGroup: 999
-          fsGroup: 999
-          privileged: true
+        - containerPort: 8081 # Jenkins UI port exposed by your image
+          name: http-port
+        - containerPort: 50001 # Jenkins JNLP port exposed by your image
+          name: jnlp-port
+        env:
+        - name: JENKINS_OPTS # Ensure Jenkins listens on all interfaces
+          value: "--httpPort=8081 --httpListenAddress=0.0.0.0"
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
-        - name: docker-socket
+        - name: docker-socket # Mount the host's Docker socket
           mountPath: /var/run/docker.sock
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        securityContext:
+          runAsUser: 0 # Run as root to gain necessary permissions for docker.sock access
+          privileged: true # Grant all capabilities to the container, often needed for host Docker access
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
           claimName: jenkins-pvc
       - name: docker-socket
         hostPath:
-          path: /var/run/docker.sock
+          path: /var/run/docker.sock # Path to the Docker socket on the host
+          type: Socket
