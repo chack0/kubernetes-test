@@ -24,6 +24,7 @@ pipeline {
 
         stage('Build Flutter Web App') {
             steps {
+                sh 'git config --global --add safe.directory /opt/flutter'
                 sh "${env.FLUTTER_WEB_BUILD_COMMAND}"
             }
         }
