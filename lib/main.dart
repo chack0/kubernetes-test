@@ -29,17 +29,30 @@ class FileSimulatorPage extends StatefulWidget {
 class _FileSimulatorPageState extends State<FileSimulatorPage> {
   final TextEditingController _controller = TextEditingController();
   String content = '';
+  // New variable to hold the storage location information
+  String storageLocationInfo = '';
 
   @override
   void initState() {
     super.initState();
+    _updateStorageLocationInfo(); // Set the storage location info on init
     _loadInitialContent();
+  }
+
+  // Helper method to set the storage location details
+  void _updateStorageLocationInfo() {
+    // In Flutter Web, localStorage is tied to the browser's origin (URL)
+    // There isn't a traditional 'file path'. We show the origin and the key.
+    setState(() {
+      storageLocationInfo =
+          'Stored in: Browser Local Storage\nOrigin: ${html.window.location.origin}\nKey: ${MyApp.storageKey}';
+    });
   }
 
   void _loadInitialContent() {
     final savedContent = html.window.localStorage[MyApp.storageKey];
     if (savedContent == null) {
-      _resetFile(); // First time - set default
+      _resetFile(); // First time - set default content
     } else {
       setState(() {
         content = savedContent;
@@ -74,6 +87,8 @@ class _FileSimulatorPageState extends State<FileSimulatorPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start, // Align content to the start
           children: [
             TextField(
               controller: _controller,
@@ -113,40 +128,20 @@ class _FileSimulatorPageState extends State<FileSimulatorPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 16), // Space before location info
+            const Text(
+              'Storage Location:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              storageLocationInfo,
+              style: TextStyle(
+                  fontStyle: FontStyle.italic, color: Colors.grey[700]),
+            ),
           ],
         ),
       ),
     );
   }
 }
-
-// // lib/main.dart
-
-// import 'package:flutter/material.dart';
-// import 'web_iframe.dart'; // Import the helper
-
-// void main() {
-//   runApp(MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   final String viewId = 'my-iframe';
-//   final String url = 'https://flutter.dev'; // Use an embeddable URL
-
-//   MyApp({super.key}) {
-//     registerIFrame(viewId, url); // Register the iframe
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Chacko Kubernetes Test',
-//       home: Scaffold(
-//         appBar: AppBar(title: const Text('Jacob Chacko 123 Kubernetes')),
-//         body: const SizedBox.expand(
-//           child: HtmlElementView(viewType: 'my-iframe'),
-//         ),
-//       ),
-//     );
-//   }
-// }
