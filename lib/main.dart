@@ -1,19 +1,20 @@
-import 'dart:html' as html;
+// Remove dart:html as we are not using localStorage anymore
+// import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Import the http package
+import 'dart:convert'; // For JSON encoding/decoding
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  static const String storageKey = 'flutter_file_sim';
-
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Local File Sim',
+      title: 'Kubernetes Backend Integration',
       home: FileSimulatorPage(),
     );
   }
@@ -29,55 +30,118 @@ class FileSimulatorPage extends StatefulWidget {
 class _FileSimulatorPageState extends State<FileSimulatorPage> {
   final TextEditingController _controller = TextEditingController();
   String content = '';
-  // New variable to hold the storage location information
-  String storageLocationInfo = '';
+  String storageLocationInfo =
+      'Initializing...'; // Will be updated from backend path
+
+  // ** IMPORTANT: Replace with your actual backend URL **
+  // Use the NodePort IP and port obtained in Part 2.
+  // Example: 'http://192.168.64.27:30000' (your worker node IP and the assigned NodePort)
+  final String backendUrl = 'http://192.168.64.27:31904';
+  // For instance: 'http://192.168.64.27:31234' (replace with your actual values)
 
   @override
   void initState() {
     super.initState();
-    _updateStorageLocationInfo(); // Set the storage location info on init
-    _loadInitialContent();
+    _updateStorageLocationInfo(); // Set initial storage location info
+    _loadInitialContentFromBackend(); // Load initial content from backend
   }
 
-  // Helper method to set the storage location details
+  // Helper method to set the storage location details (now derived from backend)
   void _updateStorageLocationInfo() {
-    // In Flutter Web, localStorage is tied to the browser's origin (URL)
-    // There isn't a traditional 'file path'. We show the origin and the key.
     setState(() {
       storageLocationInfo =
-          'Stored in: Browser Local Storage\nOrigin: ${html.window.location.origin}\nKey: ${MyApp.storageKey}';
+          'Stored on Kubernetes PV at: /var/lib/flutter-app-data/app_logs/log.txt (on kubeworker01)';
     });
   }
 
-  void _loadInitialContent() {
-    final savedContent = html.window.localStorage[MyApp.storageKey];
-    if (savedContent == null) {
-      _resetFile(); // First time - set default content
-    } else {
+  // New method to load content from the backend's /read endpoint
+  Future<void> _loadInitialContentFromBackend() async {
+    try {
+      final response = await http.get(Uri.parse('$backendUrl/read'));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          content = data['content'] ?? 'No content found.';
+        });
+      } else {
+        setState(() {
+          content =
+              'Failed to load content from backend: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
       setState(() {
-        content = savedContent;
+        content = 'Error communicating with backend: $e';
       });
     }
   }
 
-  void _writeToFile(String input) {
-    final now = DateTime.now().toString();
-    final newContent = '$content\n[$now] $input';
-    html.window.localStorage[MyApp.storageKey] = newContent.trim();
-    setState(() {
-      content = newContent.trim();
-      _controller.clear();
-    });
+  // Modified to send text to the backend's /save endpoint
+  Future<void> _writeToFile(String input) async {
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter some text to save!')),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$backendUrl/save'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'text': input}),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Text saved!')),
+        );
+        setState(() {
+          _controller.clear();
+          _loadInitialContentFromBackend(); // Refresh content after saving
+        });
+      } else {
+        final Map<String, dynamic> errorData = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Failed to save text: ${errorData['error'] ?? response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error communicating with backend: $e')),
+      );
+    }
   }
 
-  void _resetFile() {
-    final now = DateTime.now().toString();
-    final emptyMessage = '[$now] File is empty';
-    html.window.localStorage[MyApp.storageKey] = emptyMessage;
-    setState(() {
-      content = emptyMessage;
-      _controller.clear();
-    });
+  // Modified to send clear request to the backend's /clear endpoint
+  Future<void> _resetFile() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$backendUrl/clear'),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File cleared successfully!')),
+        );
+        setState(() {
+          _controller.clear();
+          _loadInitialContentFromBackend(); // Refresh content after clearing
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to clear file: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error communicating with backend: $e')),
+      );
+    }
   }
 
   @override
@@ -87,8 +151,7 @@ class _FileSimulatorPageState extends State<FileSimulatorPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start, // Align content to the start
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _controller,
@@ -128,7 +191,7 @@ class _FileSimulatorPageState extends State<FileSimulatorPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 16), // Space before location info
+            const SizedBox(height: 16),
             const Text(
               'Storage Location:',
               style: TextStyle(fontWeight: FontWeight.bold),
