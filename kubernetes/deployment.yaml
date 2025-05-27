@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: kubetest-container
-          image: chackoabraham/kubetest-argo-docker:bac7bf3
+          image: chackoabraham/kubetest-argo-docker:ddc1356
           ports:
             - containerPort: 80
           resources:
