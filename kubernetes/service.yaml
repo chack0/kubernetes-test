@@ -12,5 +12,5 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
-      nodePort: 30080  # Updated NodePort
+      nodePort: 31138  # Updated NodePort
   type: NodePort
