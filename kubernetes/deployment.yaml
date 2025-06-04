@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubetest-deployment
-  namespace: kubetest-argo-docker
+  namespace: argocd
   labels:
     app: kubetest
 spec:
