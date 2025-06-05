@@ -147,64 +147,38 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image (Multi-Arch)') { // Stage name updated for clarity
+
+
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    echo "--- Build and Push Multi-Architecture Docker Image ---"
+                    echo "--- Build and Push Docker Image ---"
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                    echo "Image Name with Tag: [${imageNameWithTag}]"
+                    echo "===youre Here===="
+                    echo "Value of : [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
+                    
+                    // Set env.IMAGE_TAG directly in the Groovy script
+                    // env.IMAGE_TAG = imageNameWithTag
+                    // echo "Git Commit: ${gitCommit}"
+                    // echo "Image Name with Tag: ${imageNameWithTag}"
+                    // echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]"
 
-                    // --- NEW DOCKER BUILDX COMMANDS ---
-
-                    // 1. Create/Use a Buildx builder (optional, but good for explicit control)
-                    //    This ensures the builder is available for multi-arch builds.
-                    //    '--use' activates it. '--bootstrap' starts it if not running.
-                    sh 'docker buildx create --name mybuilder --use || docker buildx use mybuilder --bootstrap'
-
-                    // 2. Build and Push the multi-architecture image
+                    sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
-                        sh "docker buildx build --platform linux/amd64,linux/arm64 -t ${imageNameWithTag} --push -f ${env.DOCKERFILE_PATH} ."
+                        sh "docker push ${imageNameWithTag}"
                     }
-                    // --- END NEW DOCKER BUILDX COMMANDS ---
 
+                    // echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
+                    // Stash the IMAGE_TAG
+                    // writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
                     writeFile file: 'image_tag.txt', text: imageNameWithTag
                     stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
-                    echo "--- End Build and Push Multi-Architecture Docker Image ---"
+                    // echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
+                    echo "--- End Build and Push Docker Image ---"
                 }
             }
         }
-
-        // stage('Build and Push Docker Image') {
-        //     steps {
-        //         script {
-        //             echo "--- Build and Push Docker Image ---"
-        //             def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        //             def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-        //             echo "===youre Here===="
-        //             echo "Value of : [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
-                    
-        //             // Set env.IMAGE_TAG directly in the Groovy script
-        //             // env.IMAGE_TAG = imageNameWithTag
-        //             // echo "Git Commit: ${gitCommit}"
-        //             // echo "Image Name with Tag: ${imageNameWithTag}"
-        //             // echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]"
-
-        //             sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
-        //             withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
-        //                 sh "docker push ${imageNameWithTag}"
-        //             }
-
-        //             // echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
-        //             // Stash the IMAGE_TAG
-        //             // writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
-        //             writeFile file: 'image_tag.txt', text: imageNameWithTag
-        //             stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
-        //             // echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
-        //             echo "--- End Build and Push Docker Image ---"
-        //         }
-        //     }
-        // }
         
         stage('Checkout Kubernetes Manifests') {
             steps {
