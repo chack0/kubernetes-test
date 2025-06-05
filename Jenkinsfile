@@ -13,7 +13,6 @@ pipeline {
         GIT_PUSH_CREDENTIALS_ID = 'git-id' // Replace with your actual credential ID
     }
 
-
     stages {
         stage('Checkout Flutter App Code') {
             steps {
@@ -24,7 +23,7 @@ pipeline {
 
         stage('Build Flutter Web App') {
             steps {
-                sh 'git config --global --add safe.directory /var/lib/jenkins/workspace/YourJobName # Adjust path if needed' // Or the path Jenkins uses for workspace
+                sh 'git config --global --add safe.directory /opt/flutter'
                 sh "${env.FLUTTER_WEB_BUILD_COMMAND}"
             }
         }
