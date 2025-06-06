@@ -9,15 +9,6 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Docker (This is likely unnecessary for just building a Flutter web app)
-# RUN apt-get update && apt-get install -y --no-install-recommends ...
-
-# Add jenkins user and group (This is also likely unnecessary within the build container)
-# RUN groupadd -g 999 jenkins || true
-# RUN useradd -u 999 -g jenkins -m -d /home/jenkins jenkins || true
-# RUN usermod -aG docker jenkins
-# USER jenkins
-
 # Set the Flutter version
 ARG FLUTTER_VERSION=stable
 ARG FLUTTER_CHANNEL=$FLUTTER_VERSION
@@ -47,12 +38,23 @@ RUN flutter pub get
 # Build the web app
 RUN flutter build web --release --no-tree-shake-icons
 
+# --- DEBUGGING START: These lines are crucial for diagnosis ---
+# List the contents of the 'build' directory (should contain 'web')
+RUN echo "--- Listing /home/jenkins/app/build ---"
+RUN ls -al /home/jenkins/app/build
+
+# List the contents of the 'build/web' directory (should contain your Flutter files)
+RUN echo "--- Listing /home/jenkins/app/build/web ---"
+RUN ls -al /home/jenkins/app/build/web
+
+# Attempt to print the content of index.html to ensure it's not empty or missing
+RUN echo "--- Content of /home/jenkins/app/build/web/index.html ---"
+RUN cat /home/jenkins/app/build/web/index.html
+# --- DEBUGGING END ---
+
 # Stage 2: Serve the built app with Nginx
 FROM nginx:alpine
+# Copy the built Flutter app from the builder stage to Nginx's serving directory
 COPY --from=builder /home/jenkins/app/build/web /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
-# FROM nginx:alpine
-# COPY build/web /usr/share/nginx/html
-# EXPOSE 80
-# CMD ["nginx", "-g", "daemon off;"]

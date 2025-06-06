@@ -1,18 +1,16 @@
 pipeline {
-    agent any // Running directly on the Jenkins master pod
+    agent any
 
     environment {
-        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker' // From old Jenkinsfile
-        DOCKERFILE_PATH = 'Dockerfile' // Assuming your Dockerfile is at the root
-        K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git' // From old Jenkinsfile
-        K8S_MANIFEST_REPO_CRED_ID = '' // Manifest repo is public, so no credentials needed
-        K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml' // From old Jenkinsfile
-        DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
-        IMAGE_TAG = '' // Will be set dynamically
-        FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release --no-tree-shake-icons' // Using release build
-        GIT_PUSH_CREDENTIALS_ID = 'git-id' // Replace with your actual credential ID
+        DOCKER_IMAGE_NAME = 'chackoabraham/kubetest-argo-docker'
+        DOCKERFILE_PATH = 'Dockerfile'
+        K8S_MANIFEST_REPO_URL = 'https://github.com/chack0/kubernetes-test.git'
+        K8S_MANIFEST_REPO_CRED_ID = ''
+        K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml'
+        DOCKER_REGISTRY_CRED_ID = 'doc-id'
+        IMAGE_TAG = ''
+        GIT_PUSH_CREDENTIALS_ID = 'git-id'
     }
-
 
     stages {
         stage('Checkout Flutter App Code') {
@@ -22,42 +20,37 @@ pipeline {
             }
         }
 
+        // --- IMPORTANT: This stage remains REMOVED ---
+        // The Flutter web app build (flutter build web) still happens *inside* the Dockerfile.
+        /*
         stage('Build Flutter Web App') {
             steps {
                 sh 'git config --global --add safe.directory /opt/flutter'
                 sh "${env.FLUTTER_WEB_BUILD_COMMAND}"
             }
         }
+        */
 
-
-
-        stage('Build and Push Docker Image') {
+        stage('Build and Push Docker Image (Standard)') { // Stage name updated for clarity
             steps {
                 script {
-                    echo "--- Build and Push Docker Image ---"
+                    echo "--- Build and Push Standard Docker Image ---"
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def imageNameWithTag = "${env.DOCKER_IMAGE_NAME}:${gitCommit}"
-                    echo "===youre Here===="
-                    echo "Value of : [${env.DOCKER_IMAGE_NAME}:${gitCommit}]"
-                    
-                    // Set env.IMAGE_TAG directly in the Groovy script
-                    // env.IMAGE_TAG = imageNameWithTag
-                    // echo "Git Commit: ${gitCommit}"
-                    // echo "Image Name with Tag: ${imageNameWithTag}"
-                    // echo "Value of env.IMAGE_TAG after setting: [${env.IMAGE_TAG}]"
+                    echo "Image Name with Tag: [${imageNameWithTag}]"
 
+                    // --- CRUCIAL: Standard Docker Build Command ---
                     sh "docker build -t ${imageNameWithTag} -f ${env.DOCKERFILE_PATH} ."
+
+                    // --- CRUCIAL: Standard Docker Push Command ---
                     withDockerRegistry(credentialsId: "${env.DOCKER_REGISTRY_CRED_ID}") {
                         sh "docker push ${imageNameWithTag}"
                     }
+                    // --- END CRUCIAL CHANGES ---
 
-                    // echo "Value of env.IMAGE_TAG before writeFile: [${env.IMAGE_TAG}]"
-                    // Stash the IMAGE_TAG
-                    // writeFile file: 'image_tag.txt', text: env.IMAGE_TAG
                     writeFile file: 'image_tag.txt', text: imageNameWithTag
                     stash name: 'IMAGE_TAG_VALUE', includes: 'image_tag.txt'
-                    // echo "Stashed IMAGE_TAG with value: [${env.IMAGE_TAG}]"
-                    echo "--- End Build and Push Docker Image ---"
+                    echo "--- End Build and Push Standard Docker Image ---"
                 }
             }
         }
@@ -71,32 +64,6 @@ pipeline {
             }
         }
 
-        // stage('Update Kubernetes Manifests') {
-        //     steps {
-        //         script {
-        //             echo "--- Update Kubernetes Manifests ---"
-        //             unstash name: 'IMAGE_TAG_VALUE'
-        //             echo "Unstashed IMAGE_TAG_VALUE"
-        //             echo "--- image tag value using READ : [${readFile 'image_tag.txt'}]"
-        //             def newImage = readFile 'image_tag.txt'
-        //             echo "Value of newImage (from file): [${newImage}]" // Checking the read value
-        //             env.IMAGE_TAG_FROM_FILE = newImage // Setting another env var for extra check
-        //             echo "Value of env.IMAGE_TAG_FROM_FILE: [${env.IMAGE_TAG_FROM_FILE}]"
-
-        //             def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
-        //             def deploymentContent = readFile(deploymentFile)
-        //             def updatedContent = deploymentContent.replaceAll(/(?m)^image: .*/, "image: ${newImage}")
-        //             writeFile file: deploymentFile, text: updatedContent
-
-        //             sh 'git config --global user.email "jenkins@example.com"'
-        //             sh 'git config --global user.name "Jenkins"'
-        //             sh "git add ${deploymentFile}"
-        //             sh "git commit -m 'Update image tag to ${newImage}'"
-        //             echo "--- End Update Kubernetes Manifests ---"
-        //         }
-        //     }
-        // }
-
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
@@ -108,12 +75,10 @@ pipeline {
                     def deploymentFile = "${env.K8S_DEPLOYMENT_FILE}"
                     echo "Deployment File Path: ${deploymentFile}"
 
-                    // Read the deployment file content
                     def deploymentContent = readFile(deploymentFile)
                     echo "--- Deployment File Content BEFORE Update ---"
                     echo "${deploymentContent}"
 
-                    // Regex to match the 'image:' line with potential leading spaces
                     def updatedContent = deploymentContent.replaceAll(/(?m)^ *image: *.*\r?\n/, "          image: ${newImage}\n")
 
                     writeFile file: deploymentFile, text: updatedContent
