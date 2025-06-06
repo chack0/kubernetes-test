@@ -9,7 +9,7 @@ pipeline {
         K8S_DEPLOYMENT_FILE = 'kubernetes/deployment.yaml' // From old Jenkinsfile
         DOCKER_REGISTRY_CRED_ID = 'doc-id' // Your Docker Hub credentials ID
         IMAGE_TAG = '' // Will be set dynamically
-        FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release' // Using release build
+        FLUTTER_WEB_BUILD_COMMAND = 'flutter build web --release --no-tree-shake-icons' // Using release build
         GIT_PUSH_CREDENTIALS_ID = 'git-id' // Replace with your actual credential ID
     }
 
