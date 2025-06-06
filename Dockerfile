@@ -30,7 +30,19 @@ RUN flutter doctor -v
 WORKDIR /home/jenkins/app
 
 # Copy your Flutter app code into the container
+# This copies everything from your Jenkins workspace's repo root into /home/jenkins/app
 COPY . .
+
+# --- NEW DEBUGGING START: Check the SOURCE web/index.html ---
+# List contents of the 'web' directory (where your source index.html should be)
+RUN echo "--- Listing /home/jenkins/app/web (source directory) ---"
+RUN ls -al /home/jenkins/app/web
+
+# Attempt to print the content of the source index.html
+RUN echo "--- Content of /home/jenkins/app/web/index.html (source file) ---"
+RUN cat /home/jenkins/app/web/index.html
+# --- NEW DEBUGGING END ---
+
 
 # Install dependencies for your Flutter app
 RUN flutter pub get
@@ -38,19 +50,20 @@ RUN flutter pub get
 # Build the web app
 RUN flutter build web --release --no-tree-shake-icons
 
-# --- DEBUGGING START: These lines are crucial for diagnosis ---
-# List the contents of the 'build' directory (should contain 'web')
-RUN echo "--- Listing /home/jenkins/app/build ---"
+# --- EXISTING DEBUGGING: Check the BUILD OUTPUT ---
+# List contents of the 'build' directory (should contain 'web')
+RUN echo "--- Listing /home/jenkins/app/build (output directory) ---"
 RUN ls -al /home/jenkins/app/build
 
-# List the contents of the 'build/web' directory (should contain your Flutter files)
-RUN echo "--- Listing /home/jenkins/app/build/web ---"
+# List contents of the 'build/web' directory (should contain your compiled Flutter files)
+RUN echo "--- Listing /home/jenkins/app/build/web (compiled output) ---"
 RUN ls -al /home/jenkins/app/build/web
 
-# Attempt to print the content of index.html to ensure it's not empty or missing
-RUN echo "--- Content of /home/jenkins/app/build/web/index.html ---"
+# Attempt to print the content of the COMPILED index.html (this is the one that's currently failing)
+RUN echo "--- Content of /home/jenkins/app/build/web/index.html (compiled file) ---"
 RUN cat /home/jenkins/app/build/web/index.html
-# --- DEBUGGING END ---
+# --- EXISTING DEBUGGING END ---
+
 
 # Stage 2: Serve the built app with Nginx
 FROM nginx:alpine
